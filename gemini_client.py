@@ -3,6 +3,7 @@ Gemini API client with function calling support.
 Handles the interaction between user prompts, Gemini, and function calls.
 """
 import google.generativeai as genai
+import sys
 from typing import List, Dict, Any, Optional
 from config import GEMINI_API_KEY, GEMINI_MODEL
 from functions import get_gemini_functions, execute_function
@@ -14,10 +15,37 @@ class GeminiFunctionCallingClient:
     def __init__(self):
         """Initialize the Gemini client with API key and model."""
         genai.configure(api_key=GEMINI_API_KEY)
-        self.model = genai.GenerativeModel(
-            model_name=GEMINI_MODEL,
-            tools=[{"function_declarations": get_gemini_functions()}]
-        )
+        
+        # Try different model name formats if needed
+        model_name = GEMINI_MODEL
+        # Remove 'models/' prefix if present, as it's added automatically
+        if model_name.startswith('models/'):
+            model_name = model_name.replace('models/', '')
+        
+        try:
+            self.model = genai.GenerativeModel(
+                model_name=model_name,
+                tools=[{"function_declarations": get_gemini_functions()}]
+            )
+        except Exception as e:
+            # If the model fails, try alternative names
+            alternative_models = ['gemini-1.5-pro', 'gemini-pro', 'gemini-1.5-flash-latest']
+            if model_name not in alternative_models:
+                for alt_model in alternative_models:
+                    try:
+                        self.model = genai.GenerativeModel(
+                            model_name=alt_model,
+                            tools=[{"function_declarations": get_gemini_functions()}]
+                        )
+                        print(f"Warning: Using alternative model {alt_model} instead of {model_name}", file=sys.stderr)
+                        break
+                    except:
+                        continue
+                else:
+                    raise e
+            else:
+                raise e
+        
         self.chat = None
         self.conversation_history = []
     

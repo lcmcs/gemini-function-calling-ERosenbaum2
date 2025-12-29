@@ -19,7 +19,8 @@ if not GEMINI_API_KEY:
 MINYAN_API_BASE_URL = os.getenv('MINYAN_API_BASE_URL', 'http://localhost:5000')
 
 # Gemini Model Configuration
-GEMINI_MODEL = os.getenv('GEMINI_MODEL', 'gemini-1.5-flash')
+# Try gemini-1.5-pro if gemini-1.5-flash doesn't work
+GEMINI_MODEL = os.getenv('GEMINI_MODEL', 'gemini-1.5-pro')
 
 def get_config():
     """Get configuration dictionary."""

@@ -185,21 +185,26 @@ class GeminiFunctionCallingClient:
             
             # Create function response for Gemini
             # Format: dictionary with function_response containing name and response
-            function_response_data = {
-                'function_response': {
-                    'name': function_name,
-                    'response': function_result.get('data') if function_result['success'] else {
-                        'error': function_result.get('error', 'Unknown error')
+            if function_result['success']:
+                function_response_data = {
+                    'function_response': {
+                        'name': function_name,
+                        'response': function_result.get('data')
                     }
                 }
-            }
+            else:
+                function_response_data = {
+                    'function_response': {
+                        'name': function_name,
+                        'response': {
+                            'error': function_result.get('error', 'Unknown error')
+                        }
+                    }
+                }
             
             # Send function response back to Gemini
-            # Include the original response content along with the function response
-            response = self.chat.send_message([
-                response.candidates[0].content,
-                function_response_data
-            ])
+            # Just send the function response as a dict, not the original content object
+            response = self.chat.send_message(function_response_data)
         
         # Get final text response
         final_text = response.text if hasattr(response, 'text') else str(response)

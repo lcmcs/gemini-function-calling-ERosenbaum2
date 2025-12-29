@@ -183,6 +183,62 @@ def handle_find_nearby_broadcasts(args: Dict[str, Any]) -> Dict[str, Any]:
         }
 
 
+def handle_geocode_location(args: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Handle geocoding a location name to coordinates.
+    Uses Nominatim (OpenStreetMap) free geocoding service.
+    """
+    location = args.get('location', '').strip()
+    if not location:
+        return {
+            'success': False,
+            'error': 'Location parameter is required'
+        }
+    
+    try:
+        # Use Nominatim (OpenStreetMap) free geocoding API
+        url = 'https://nominatim.openstreetmap.org/search'
+        params = {
+            'q': location,
+            'format': 'json',
+            'limit': 1
+        }
+        headers = {
+            'User-Agent': 'MinyanFinder/1.0'  # Required by Nominatim
+        }
+        
+        response = requests.get(url, params=params, headers=headers, timeout=10)
+        response.raise_for_status()
+        
+        results = response.json()
+        if not results:
+            return {
+                'success': False,
+                'error': f'Location "{location}" not found'
+            }
+        
+        result = results[0]
+        return {
+            'success': True,
+            'data': {
+                'location': location,
+                'latitude': float(result['lat']),
+                'longitude': float(result['lon']),
+                'display_name': result.get('display_name', location)
+            }
+        }
+    except requests.exceptions.RequestException as e:
+        return {
+            'success': False,
+            'error': f'Geocoding failed: {str(e)}'
+        }
+    except (KeyError, ValueError) as e:
+        return {
+            'success': False,
+            'error': f'Invalid geocoding response: {str(e)}'
+        }
+
+
 def execute_function(function_name: str, args: Dict[str, Any]) -> Dict[str, Any]:
     """
     Execute a function call by name.
@@ -190,7 +246,8 @@ def execute_function(function_name: str, args: Dict[str, Any]) -> Dict[str, Any]
     """
     handlers = {
         'createBroadcast': handle_create_broadcast,
-        'findNearbyBroadcasts': handle_find_nearby_broadcasts
+        'findNearbyBroadcasts': handle_find_nearby_broadcasts,
+        'geocodeLocation': handle_geocode_location
     }
     
     handler = handlers.get(function_name)
@@ -209,5 +266,23 @@ def get_gemini_functions() -> List[Dict[str, Any]]:
     Main entry point for getting functions.
     """
     openapi_spec = load_openapi_spec()
-    return convert_openapi_to_gemini_functions(openapi_spec)
+    functions = convert_openapi_to_gemini_functions(openapi_spec)
+    
+    # Add geocoding function (not in OpenAPI spec)
+    functions.append({
+        'name': 'geocodeLocation',
+        'description': 'Convert a location name (city, neighborhood, address) to latitude and longitude coordinates. Use this when the user provides a location name instead of coordinates.',
+        'parameters': {
+            'type': 'object',
+            'properties': {
+                'location': {
+                    'type': 'string',
+                    'description': 'Location name (e.g., "Cedarhurst NY", "Manhattan", "Upper West Side, New York")'
+                }
+            },
+            'required': ['location']
+        }
+    })
+    
+    return functions
 

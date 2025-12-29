@@ -292,7 +292,7 @@
                     <input 
                         type="text" 
                         id="messageInput" 
-                        placeholder="Type your message here... (e.g., 'I need a mincha minyan at 40.7128, -74.0060')"
+                        placeholder="I need a mincha minyan within 30 minutes in the Manhattan area"
                         onkeypress="handleKeyPress(event)"
                     >
                     <button class="send-btn" onclick="sendMessage()" id="sendBtn">Send</button>
@@ -323,9 +323,9 @@
 
         function sendExample(type) {
             const examples = {
-                createBroadcast: "I need a mincha minyan at 40.7128, -74.0060. The earliest time is 2025-03-26T13:00:00Z and latest is 2025-03-26T14:00:00Z",
-                findNearby: "Find nearby mincha minyans within 2 miles of latitude 40.7130 and longitude -74.0059",
-                combined: "I need a mincha minyan at 40.7128, -74.0060. Can you create one and then find others nearby?"
+                createBroadcast: "I need a mincha minyan within 30 minutes in the Manhattan area",
+                findNearby: "Find nearby mincha minyans within 2 miles in the Brooklyn area",
+                combined: "I need a mincha minyan within 1 hour in the Upper West Side area. Can you create one and then find others nearby?"
             };
             
             document.getElementById('messageInput').value = examples[type];
@@ -379,18 +379,31 @@
                         // Show corresponding API request/response
                         const apiResponse = data.api_responses[index];
                         if (apiResponse) {
-                            const apiMethod = fc.name === 'createBroadcast' ? 'POST' : 'GET';
-                            const apiEndpoint = fc.name === 'createBroadcast' ? '/broadcasts' : '/broadcasts/nearby';
-                            
-                            addFlowStep('api-request', 
-                                `📡 API Request`, 
-                                `${apiMethod} ${apiEndpoint}<br><pre class="code-block">${JSON.stringify(fc.arguments, null, 2)}</pre>`
-                            );
+                            // Handle geocoding function differently
+                            if (fc.name === 'geocodeLocation') {
+                                addFlowStep('api-request', 
+                                    `🌍 Geocoding Service Request`, 
+                                    `GET Nominatim Geocoding API<br>Location: <strong>${fc.arguments.location}</strong>`
+                                );
 
-                            addFlowStep('api-response', 
-                                `📥 API Response`, 
-                                `Status: <strong>${apiResponse.success ? 'Success ✓' : 'Error ✗'}</strong><br><pre class="code-block">${JSON.stringify(apiResponse.data || {error: apiResponse.error}, null, 2)}</pre>`
-                            );
+                                addFlowStep('api-response', 
+                                    `📥 Geocoding Response`, 
+                                    `Status: <strong>${apiResponse.success ? 'Success ✓' : 'Error ✗'}</strong><br><pre class="code-block">${JSON.stringify(apiResponse.data || {error: apiResponse.error}, null, 2)}</pre>`
+                                );
+                            } else {
+                                const apiMethod = fc.name === 'createBroadcast' ? 'POST' : 'GET';
+                                const apiEndpoint = fc.name === 'createBroadcast' ? '/broadcasts' : '/broadcasts/nearby';
+                                
+                                addFlowStep('api-request', 
+                                    `📡 API Request`, 
+                                    `${apiMethod} ${apiEndpoint}<br><pre class="code-block">${JSON.stringify(fc.arguments, null, 2)}</pre>`
+                                );
+
+                                addFlowStep('api-response', 
+                                    `📥 API Response`, 
+                                    `Status: <strong>${apiResponse.success ? 'Success ✓' : 'Error ✗'}</strong><br><pre class="code-block">${JSON.stringify(apiResponse.data || {error: apiResponse.error}, null, 2)}</pre>`
+                                );
+                            }
                         }
                     });
                 } else {

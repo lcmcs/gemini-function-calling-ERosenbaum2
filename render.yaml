@@ -11,6 +11,6 @@ services:
         value: http://localhost:5000
         sync: false
       - key: GEMINI_MODEL
-        value: gemini-pro
+        value: gemini-2.5-flash
         sync: false
 

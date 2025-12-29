@@ -32,10 +32,13 @@ class GeminiFunctionCallingClient:
         # Try model names in order of preference
         model_names_to_try = [
             model_name,  # Try the configured model first
+            'gemini-2.5-flash',  # Latest flash model
+            'gemini-2.5-pro',  # Latest pro model
             'gemini-pro',  # Most basic model name
             'gemini-1.5-pro-latest',
             'gemini-1.5-flash-latest',
-            'models/gemini-pro',  # Try with models/ prefix
+            'models/gemini-2.5-flash',  # Try with models/ prefix
+            'models/gemini-pro',
             'models/gemini-1.5-pro',
             'models/gemini-1.5-flash'
         ]

@@ -22,29 +22,52 @@ class GeminiFunctionCallingClient:
         if model_name.startswith('models/'):
             model_name = model_name.replace('models/', '')
         
+        # List available models for debugging
         try:
-            self.model = genai.GenerativeModel(
-                model_name=model_name,
-                tools=[{"function_declarations": get_gemini_functions()}]
-            )
+            available_models = [m.name for m in genai.list_models() if 'generateContent' in m.supported_generation_methods]
+            print(f"Available models with generateContent: {available_models}", file=sys.stderr)
         except Exception as e:
-            # If the model fails, try alternative names
-            alternative_models = ['gemini-1.5-pro', 'gemini-pro', 'gemini-1.5-flash-latest']
-            if model_name not in alternative_models:
-                for alt_model in alternative_models:
-                    try:
-                        self.model = genai.GenerativeModel(
-                            model_name=alt_model,
-                            tools=[{"function_declarations": get_gemini_functions()}]
-                        )
-                        print(f"Warning: Using alternative model {alt_model} instead of {model_name}", file=sys.stderr)
-                        break
-                    except:
-                        continue
-                else:
-                    raise e
-            else:
-                raise e
+            print(f"Could not list models: {e}", file=sys.stderr)
+        
+        # Try model names in order of preference
+        model_names_to_try = [
+            model_name,  # Try the configured model first
+            'gemini-pro',  # Most basic model name
+            'gemini-1.5-pro-latest',
+            'gemini-1.5-flash-latest',
+            'models/gemini-pro',  # Try with models/ prefix
+            'models/gemini-1.5-pro',
+            'models/gemini-1.5-flash'
+        ]
+        
+        # Remove duplicates while preserving order
+        seen = set()
+        unique_models = []
+        for m in model_names_to_try:
+            if m not in seen:
+                seen.add(m)
+                unique_models.append(m)
+        
+        last_error = None
+        for try_model in unique_models:
+            try:
+                print(f"Trying model: {try_model}", file=sys.stderr)
+                self.model = genai.GenerativeModel(
+                    model_name=try_model,
+                    tools=[{"function_declarations": get_gemini_functions()}]
+                )
+                # Test if model actually works by checking if it has the method
+                print(f"Successfully initialized model: {try_model}", file=sys.stderr)
+                break
+            except Exception as e:
+                last_error = e
+                print(f"Failed to initialize {try_model}: {str(e)}", file=sys.stderr)
+                continue
+        else:
+            # If all models failed, raise the last error
+            error_msg = f"Failed to initialize any Gemini model. Last error: {last_error}"
+            print(error_msg, file=sys.stderr)
+            raise Exception(error_msg)
         
         self.chat = None
         self.conversation_history = []

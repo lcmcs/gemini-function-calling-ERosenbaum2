@@ -2,12 +2,12 @@
 Web wrapper for Gemini Function Calling demonstration.
 Exposes the CLI functionality via HTTP endpoints for deployment on Render.
 """
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, send_from_directory
 from gemini_client import GeminiFunctionCallingClient
 import os
 import sys
 
-app = Flask(__name__)
+app = Flask(__name__, static_folder='static', static_url_path='')
 
 # Initialize the Gemini client
 client = None
@@ -24,6 +24,12 @@ except Exception as e:
 
 
 @app.route('/', methods=['GET'])
+def index():
+    """Serve the main UI page."""
+    return send_from_directory('static', 'index.html')
+
+
+@app.route('/health', methods=['GET'])
 def health():
     """Health check endpoint."""
     if client is None:
@@ -42,7 +48,8 @@ def health():
         "status": "ok",
         "message": "Gemini Function Calling API is running",
         "endpoints": {
-            "/": "Health check (GET)",
+            "/": "UI (GET)",
+            "/health": "Health check (GET)",
             "/chat": "Send a message to Gemini (POST)",
             "/chat/new": "Start a new chat session (POST)",
             "/history": "Get conversation history (GET)"

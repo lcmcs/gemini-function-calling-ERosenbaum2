@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gemini Function Calling Demo - Minyan Finder API</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2em;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            opacity: 0.9;
+            font-size: 1.1em;
+        }
+
+        .content {
+            padding: 30px;
+        }
+
+        .examples {
+            margin-bottom: 30px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+
+        .examples h2 {
+            margin-bottom: 15px;
+            color: #333;
+        }
+
+        .example-buttons {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .example-btn {
+            padding: 12px 24px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background 0.3s;
+        }
+
+        .example-btn:hover {
+            background: #5568d3;
+        }
+
+        .chat-container {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .input-section {
+            display: flex;
+            gap: 10px;
+        }
+
+        #messageInput {
+            flex: 1;
+            padding: 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+
+        #messageInput:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .send-btn {
+            padding: 15px 30px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: background 0.3s;
+        }
+
+        .send-btn:hover:not(:disabled) {
+            background: #5568d3;
+        }
+
+        .send-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        .clear-btn {
+            padding: 15px 30px;
+            background: #6c757d;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background 0.3s;
+        }
+
+        .clear-btn:hover {
+            background: #5a6268;
+        }
+
+        .flow-container {
+            margin-top: 30px;
+        }
+
+        .flow-step {
+            background: #f8f9fa;
+            border-left: 4px solid #667eea;
+            padding: 20px;
+            margin-bottom: 15px;
+            border-radius: 6px;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .flow-step h3 {
+            color: #667eea;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .flow-step.user {
+            border-left-color: #28a745;
+        }
+
+        .flow-step.user h3 {
+            color: #28a745;
+        }
+
+        .flow-step.function-call {
+            border-left-color: #ffc107;
+        }
+
+        .flow-step.function-call h3 {
+            color: #ffc107;
+        }
+
+        .flow-step.api-request {
+            border-left-color: #17a2b8;
+        }
+
+        .flow-step.api-request h3 {
+            color: #17a2b8;
+        }
+
+        .flow-step.api-response {
+            border-left-color: #6f42c1;
+        }
+
+        .flow-step.api-response h3 {
+            color: #6f42c1;
+        }
+
+        .flow-step.gemini-response {
+            border-left-color: #dc3545;
+        }
+
+        .flow-step.gemini-response h3 {
+            color: #dc3545;
+        }
+
+        .code-block {
+            background: #2d2d2d;
+            color: #f8f8f2;
+            padding: 15px;
+            border-radius: 6px;
+            overflow-x: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            margin-top: 10px;
+        }
+
+        .icon {
+            font-size: 1.2em;
+        }
+
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(102, 126, 234, 0.3);
+            border-radius: 50%;
+            border-top-color: #667eea;
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 15px;
+            border-radius: 6px;
+            border-left: 4px solid #dc3545;
+            margin-top: 20px;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #6c757d;
+        }
+
+        .empty-state h3 {
+            margin-bottom: 10px;
+            color: #495057;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔮 Gemini Function Calling Demo</h1>
+            <p>Minyan Finder API - Complete Request/Response Flow Visualization</p>
+        </div>
+
+        <div class="content">
+            <div class="examples">
+                <h2>📋 Example Prompts (Demonstrates 2 Function Calls)</h2>
+                <div class="example-buttons">
+                    <button class="example-btn" onclick="sendExample('createBroadcast')">
+                        Example 1: Create Broadcast
+                    </button>
+                    <button class="example-btn" onclick="sendExample('findNearby')">
+                        Example 2: Find Nearby Broadcasts
+                    </button>
+                    <button class="example-btn" onclick="sendExample('combined')">
+                        Combined Example
+                    </button>
+                </div>
+            </div>
+
+            <div class="chat-container">
+                <div class="input-section">
+                    <input 
+                        type="text" 
+                        id="messageInput" 
+                        placeholder="Type your message here... (e.g., 'I need a mincha minyan at 40.7128, -74.0060')"
+                        onkeypress="handleKeyPress(event)"
+                    >
+                    <button class="send-btn" onclick="sendMessage()" id="sendBtn">Send</button>
+                    <button class="clear-btn" onclick="clearFlow()">Clear</button>
+                </div>
+
+                <div class="flow-container" id="flowContainer">
+                    <div class="empty-state">
+                        <h3>👋 Welcome!</h3>
+                        <p>Send a message or click an example above to see the complete request/response flow.</p>
+                        <p style="margin-top: 10px; font-size: 0.9em;">
+                            This demo shows: User Message → Gemini Function Call → API Request → API Response → Gemini Final Response
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = window.location.origin;
+
+        function handleKeyPress(event) {
+            if (event.key === 'Enter') {
+                sendMessage();
+            }
+        }
+
+        function sendExample(type) {
+            const examples = {
+                createBroadcast: "I need a mincha minyan at 40.7128, -74.0060. The earliest time is 2025-03-26T13:00:00Z and latest is 2025-03-26T14:00:00Z",
+                findNearby: "Find nearby mincha minyans within 2 miles of latitude 40.7130 and longitude -74.0059",
+                combined: "I need a mincha minyan at 40.7128, -74.0060. Can you create one and then find others nearby?"
+            };
+            
+            document.getElementById('messageInput').value = examples[type];
+            sendMessage();
+        }
+
+        async function sendMessage() {
+            const input = document.getElementById('messageInput');
+            const message = input.value.trim();
+            const sendBtn = document.getElementById('sendBtn');
+            const flowContainer = document.getElementById('flowContainer');
+
+            if (!message) return;
+
+            // Disable input and button
+            input.disabled = true;
+            sendBtn.disabled = true;
+            sendBtn.innerHTML = '<span class="loading"></span> Sending...';
+
+            // Clear empty state if present
+            if (flowContainer.querySelector('.empty-state')) {
+                flowContainer.innerHTML = '';
+            }
+
+            // Show user message
+            addFlowStep('user', '👤 User Message', message);
+
+            try {
+                const response = await fetch(`${API_BASE}/chat`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ message: message, verbose: false })
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.error || 'Failed to get response');
+                }
+
+                // Show function calls
+                if (data.function_calls && data.function_calls.length > 0) {
+                    data.function_calls.forEach((fc, index) => {
+                        addFlowStep('function-call', 
+                            `🔧 Gemini Function Call ${data.function_calls.length > 1 ? `#${index + 1}` : ''}`, 
+                            `Function: <strong>${fc.name}</strong><br>Arguments: <pre class="code-block">${JSON.stringify(fc.arguments, null, 2)}</pre>`
+                        );
+
+                        // Show corresponding API request/response
+                        const apiResponse = data.api_responses[index];
+                        if (apiResponse) {
+                            const apiMethod = fc.name === 'createBroadcast' ? 'POST' : 'GET';
+                            const apiEndpoint = fc.name === 'createBroadcast' ? '/broadcasts' : '/broadcasts/nearby';
+                            
+                            addFlowStep('api-request', 
+                                `📡 API Request`, 
+                                `${apiMethod} ${apiEndpoint}<br><pre class="code-block">${JSON.stringify(fc.arguments, null, 2)}</pre>`
+                            );
+
+                            addFlowStep('api-response', 
+                                `📥 API Response`, 
+                                `Status: <strong>${apiResponse.success ? 'Success ✓' : 'Error ✗'}</strong><br><pre class="code-block">${JSON.stringify(apiResponse.data || {error: apiResponse.error}, null, 2)}</pre>`
+                            );
+                        }
+                    });
+                } else {
+                    addFlowStep('function-call', 
+                        '🔧 Gemini Analysis', 
+                        'No function call needed - Gemini responded directly'
+                    );
+                }
+
+                // Show final Gemini response
+                addFlowStep('gemini-response', 
+                    '💬 Gemini Final Response', 
+                    data.response || 'No response'
+                );
+
+            } catch (error) {
+                addFlowStep('error', 
+                    '❌ Error', 
+                    error.message
+                );
+            } finally {
+                // Re-enable input and button
+                input.disabled = false;
+                sendBtn.disabled = false;
+                sendBtn.textContent = 'Send';
+                input.value = '';
+                input.focus();
+            }
+        }
+
+        function addFlowStep(type, title, content) {
+            const flowContainer = document.getElementById('flowContainer');
+            const step = document.createElement('div');
+            step.className = `flow-step ${type}`;
+            step.innerHTML = `
+                <h3><span class="icon">${getIcon(type)}</span> ${title}</h3>
+                <div>${content}</div>
+            `;
+            flowContainer.appendChild(step);
+            step.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+
+        function getIcon(type) {
+            const icons = {
+                'user': '👤',
+                'function-call': '🔧',
+                'api-request': '📡',
+                'api-response': '📥',
+                'gemini-response': '💬',
+                'error': '❌'
+            };
+            return icons[type] || '📝';
+        }
+
+        function clearFlow() {
+            const flowContainer = document.getElementById('flowContainer');
+            flowContainer.innerHTML = `
+                <div class="empty-state">
+                    <h3>👋 Flow Cleared</h3>
+                    <p>Send a message or click an example above to see the complete request/response flow.</p>
+                </div>
+            `;
+        }
+    </script>
+</body>
+</html>
+

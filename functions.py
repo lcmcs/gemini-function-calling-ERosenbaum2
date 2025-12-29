@@ -55,11 +55,17 @@ def convert_openapi_to_gemini_functions(openapi_spec: Dict[str, Any]) -> List[Di
                 if 'enum' in prop_schema:
                     prop_json['enum'] = prop_schema['enum']
                 
-                # Add minimum/maximum if present
-                if 'minimum' in prop_schema:
-                    prop_json['minimum'] = prop_schema['minimum']
-                if 'maximum' in prop_schema:
-                    prop_json['maximum'] = prop_schema['maximum']
+                # Note: Gemini function calling API doesn't support minimum/maximum constraints
+                # Add constraint info to description if present
+                if 'minimum' in prop_schema or 'maximum' in prop_schema:
+                    constraints = []
+                    if 'minimum' in prop_schema:
+                        constraints.append(f"minimum: {prop_schema['minimum']}")
+                    if 'maximum' in prop_schema:
+                        constraints.append(f"maximum: {prop_schema['maximum']}")
+                    if constraints:
+                        prop_json['description'] = (prop_json.get('description', '') + 
+                                                    f" (Constraints: {', '.join(constraints)})").strip()
                 
                 json_schema['properties'][prop_name] = prop_json
         
@@ -100,10 +106,18 @@ def convert_openapi_to_gemini_functions(openapi_spec: Dict[str, Any]) -> List[Di
                 prop['format'] = param_schema['format']
             if 'enum' in param_schema:
                 prop['enum'] = param_schema['enum']
-            if 'minimum' in param_schema:
-                prop['minimum'] = param_schema['minimum']
-            if 'maximum' in param_schema:
-                prop['maximum'] = param_schema['maximum']
+            
+            # Note: Gemini function calling API doesn't support minimum/maximum constraints
+            # Add constraint info to description if present
+            if 'minimum' in param_schema or 'maximum' in param_schema:
+                constraints = []
+                if 'minimum' in param_schema:
+                    constraints.append(f"minimum: {param_schema['minimum']}")
+                if 'maximum' in param_schema:
+                    constraints.append(f"maximum: {param_schema['maximum']}")
+                if constraints:
+                    prop['description'] = (prop.get('description', '') + 
+                                          f" (Constraints: {', '.join(constraints)})").strip()
             
             properties[param_name] = prop
             

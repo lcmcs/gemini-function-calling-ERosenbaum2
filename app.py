@@ -10,21 +10,32 @@ import sys
 app = Flask(__name__)
 
 # Initialize the Gemini client
+client = None
+init_error = None
 try:
     client = GeminiFunctionCallingClient()
     client.start_chat()
+    print("Gemini client initialized successfully", file=sys.stderr)
 except Exception as e:
+    init_error = str(e)
     print(f"Error initializing Gemini client: {e}", file=sys.stderr)
-    client = None
+    import traceback
+    traceback.print_exc(file=sys.stderr)
 
 
 @app.route('/', methods=['GET'])
 def health():
     """Health check endpoint."""
     if client is None:
+        error_msg = "Gemini client not initialized."
+        if init_error:
+            error_msg += f" Error: {init_error}"
+        else:
+            error_msg += " Check GEMINI_API_KEY environment variable."
         return jsonify({
             "status": "error",
-            "message": "Gemini client not initialized. Check GEMINI_API_KEY environment variable."
+            "message": error_msg,
+            "error_details": init_error
         }), 500
     
     return jsonify({
@@ -43,8 +54,14 @@ def health():
 def chat():
     """Handle chat requests via HTTP."""
     if client is None:
+        error_msg = "Gemini client not initialized."
+        if init_error:
+            error_msg += f" Error: {init_error}"
+        else:
+            error_msg += " Check GEMINI_API_KEY environment variable."
         return jsonify({
-            "error": "Gemini client not initialized. Check GEMINI_API_KEY environment variable."
+            "error": error_msg,
+            "error_details": init_error
         }), 500
     
     try:
@@ -73,8 +90,14 @@ def chat():
 def new_chat():
     """Start a new chat session."""
     if client is None:
+        error_msg = "Gemini client not initialized."
+        if init_error:
+            error_msg += f" Error: {init_error}"
+        else:
+            error_msg += " Check GEMINI_API_KEY environment variable."
         return jsonify({
-            "error": "Gemini client not initialized. Check GEMINI_API_KEY environment variable."
+            "error": error_msg,
+            "error_details": init_error
         }), 500
     
     try:
@@ -91,8 +114,14 @@ def new_chat():
 def get_history():
     """Get conversation history."""
     if client is None:
+        error_msg = "Gemini client not initialized."
+        if init_error:
+            error_msg += f" Error: {init_error}"
+        else:
+            error_msg += " Check GEMINI_API_KEY environment variable."
         return jsonify({
-            "error": "Gemini client not initialized. Check GEMINI_API_KEY environment variable."
+            "error": error_msg,
+            "error_details": init_error
         }), 500
     
     try:

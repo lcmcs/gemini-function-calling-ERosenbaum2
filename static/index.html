@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gemini Function Calling Demo - Minyan Finder API</title>
+    <title>Minyan Finder - Find or Request a Minyan</title>
     <style>
         * {
             margin: 0;
@@ -308,21 +308,21 @@
 <body>
     <div class="container">
         <div class="header">
-            <h1>🔮 Gemini Function Calling Demo</h1>
-            <p>Minyan Finder API - Complete Request/Response Flow Visualization</p>
+            <h1>🔮 Minyan Finder</h1>
+            <p>Find or request a minyan near you - Complete Request/Response Flow Visualization</p>
         </div>
 
         <div class="content">
             <div class="form-section">
-                <h2>📋 Request Form</h2>
+                <h2>📋 What would you like to do?</h2>
                 <form id="requestForm">
                     <div class="form-grid">
                         <div class="form-group">
-                            <label for="requestType">Request Type <span class="required-indicator">*</span></label>
+                            <label for="requestType">I want to... <span class="required-indicator">*</span></label>
                             <select id="requestType" required>
-                                <option value="">Select request type...</option>
-                                <option value="createBroadcast">Create Broadcast</option>
-                                <option value="findNearby">Find Nearby Broadcasts</option>
+                                <option value="">Choose an option...</option>
+                                <option value="createBroadcast">Request a Minyan (I need people to join me)</option>
+                                <option value="findNearby">Find Nearby Minyans (Search for existing minyans)</option>
                             </select>
                         </div>
 
@@ -337,16 +337,32 @@
                         </div>
 
                         <div class="form-group">
-                            <label for="startTime">Start Time <span class="required-indicator">*</span></label>
+                            <label for="startTime">Earliest Time <span class="required-indicator">*</span></label>
                             <select id="startTime" required>
-                                <option value="">Select start time...</option>
+                                <option value="">Select earliest time...</option>
                             </select>
                         </div>
 
                         <div class="form-group">
-                            <label for="endTime">End Time <span class="required-indicator">*</span></label>
+                            <label for="endTime">Latest Time <span class="required-indicator">*</span></label>
                             <select id="endTime" required>
-                                <option value="">Select end time...</option>
+                                <option value="">Select latest time...</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group" id="radiusGroup" style="display: none; flex-direction: column;">
+                            <label for="radius">Search Radius (Miles) <span class="required-indicator">*</span></label>
+                            <select id="radius">
+                                <option value="">Select radius...</option>
+                                <option value="1">1 mile</option>
+                                <option value="2">2 miles</option>
+                                <option value="3">3 miles</option>
+                                <option value="5">5 miles</option>
+                                <option value="10">10 miles</option>
+                                <option value="15">15 miles</option>
+                                <option value="20">20 miles</option>
+                                <option value="25">25 miles</option>
+                                <option value="50">50 miles</option>
                             </select>
                         </div>
 
@@ -366,7 +382,7 @@
                     </div>
 
                     <div class="form-actions">
-                        <button type="submit" class="send-btn" id="sendBtn">Submit Request</button>
+                        <button type="submit" class="send-btn" id="sendBtn">Find or Request Minyan</button>
                         <button type="button" class="clear-btn" onclick="clearForm()">Clear Form</button>
                         <button type="button" class="clear-btn" onclick="clearFlow()">Clear Results</button>
                     </div>
@@ -375,10 +391,10 @@
 
             <div class="flow-container" id="flowContainer">
                 <div class="empty-state">
-                    <h3>👋 Welcome!</h3>
-                    <p>Fill out the form above and submit to see the complete request/response flow.</p>
+                    <h3>👋 Welcome to Minyan Finder!</h3>
+                    <p>Fill out the form above to either request a minyan or find nearby minyans.</p>
                     <p style="margin-top: 10px; font-size: 0.9em;">
-                        This demo shows: User Request → Gemini Function Call → API Request → API Response → Gemini Final Response
+                        This demo shows: Your Request → AI Processing → API Call → Results → AI Response
                     </p>
                 </div>
             </div>
@@ -728,6 +744,38 @@
             }
         });
 
+        // Show/hide radius field based on request type
+        document.getElementById('requestType').addEventListener('change', (e) => {
+            const radiusGroup = document.getElementById('radiusGroup');
+            const radiusSelect = document.getElementById('radius');
+            
+            if (e.target.value === 'findNearby') {
+                radiusGroup.style.display = 'flex';
+                radiusSelect.required = true;
+            } else {
+                radiusGroup.style.display = 'none';
+                radiusSelect.required = false;
+                radiusSelect.value = '';
+            }
+            
+            // Also hide/show time fields based on request type
+            const timeFields = document.querySelectorAll('#startTime, #endTime');
+            const timeLabels = document.querySelectorAll('label[for="startTime"], label[for="endTime"]');
+            
+            if (e.target.value === 'createBroadcast') {
+                timeFields.forEach(field => {
+                    field.closest('.form-group').style.display = 'flex';
+                    field.required = true;
+                });
+            } else {
+                timeFields.forEach(field => {
+                    field.closest('.form-group').style.display = 'none';
+                    field.required = false;
+                    field.value = '';
+                });
+            }
+        });
+
         // Form submission
         document.getElementById('requestForm').addEventListener('submit', async (e) => {
             e.preventDefault();
@@ -740,20 +788,29 @@
             const startTime = document.getElementById('startTime').value;
             const endTime = document.getElementById('endTime').value;
             const city = document.getElementById('cityInput').value;
+            const radius = document.getElementById('radius').value;
 
-            if (!requestType || !minyanType || !startTime || !endTime || !city) {
+            // Validate required fields
+            if (!requestType || !minyanType || !city) {
                 alert('Please fill in all required fields');
                 return null;
             }
 
-            // Convert 24-hour time to readable format
-            const startTime12 = convertTo12Hour(startTime);
-            const endTime12 = convertTo12Hour(endTime);
-
             if (requestType === 'createBroadcast') {
+                if (!startTime || !endTime) {
+                    alert('Please fill in all required fields');
+                    return null;
+                }
+                // Convert 24-hour time to readable format
+                const startTime12 = convertTo12Hour(startTime);
+                const endTime12 = convertTo12Hour(endTime);
                 return `I need a ${minyanType} minyan in ${city}. The start time is ${startTime12} and end time is ${endTime12}`;
             } else if (requestType === 'findNearby') {
-                return `Find nearby ${minyanType} minyans in ${city}`;
+                if (!radius) {
+                    alert('Please select a search radius');
+                    return null;
+                }
+                return `Find nearby ${minyanType} minyans within ${radius} ${radius === '1' ? 'mile' : 'miles'} in ${city}`;
             }
         }
 
@@ -776,7 +833,7 @@
             document.getElementById('requestForm').querySelectorAll('input, select, button').forEach(el => {
                 el.disabled = true;
             });
-            sendBtn.innerHTML = '<span class="loading"></span> Processing...';
+            sendBtn.innerHTML = '<span class="loading"></span> Searching...';
 
             // Clear empty state if present
             if (flowContainer.querySelector('.empty-state')) {
@@ -862,7 +919,7 @@
                 document.getElementById('requestForm').querySelectorAll('input, select, button').forEach(el => {
                     el.disabled = false;
                 });
-                sendBtn.textContent = 'Submit Request';
+                sendBtn.textContent = 'Find or Request Minyan';
             }
         }
 
@@ -875,8 +932,8 @@
             const flowContainer = document.getElementById('flowContainer');
             flowContainer.innerHTML = `
                 <div class="empty-state">
-                    <h3>👋 Flow Cleared</h3>
-                    <p>Fill out the form above and submit to see the complete request/response flow.</p>
+                    <h3>👋 Results Cleared</h3>
+                    <p>Fill out the form above to request a minyan or find nearby minyans.</p>
                 </div>
             `;
         }

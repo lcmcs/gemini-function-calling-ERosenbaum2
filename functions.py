@@ -474,21 +474,8 @@ def get_gemini_functions() -> List[Dict[str, Any]]:
     openapi_spec = load_openapi_spec()
     functions = convert_openapi_to_gemini_functions(openapi_spec)
     
-    # Add geocoding function (not in OpenAPI spec)
-    functions.append({
-        'name': 'geocodeLocation',
-        'description': 'Convert a location name (city, neighborhood, address) to latitude and longitude coordinates. Use this when the user provides a location name instead of coordinates.',
-        'parameters': {
-            'type': 'object',
-            'properties': {
-                'location': {
-                    'type': 'string',
-                    'description': 'Location name (e.g., "Cedarhurst NY", "Manhattan", "Upper West Side, New York")'
-                }
-            },
-            'required': ['location']
-        }
-    })
+    # Note: geocodeLocation function removed - coordinates are now included directly in user messages
+    # The handle_geocode_location function is kept as a backend utility but not exposed to Gemini
     
     return functions
 

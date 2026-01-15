@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: gemini-function-calling
+    env: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: python app.py
+    envVars:
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: MINYAN_API_BASE_URL
+        value: http://localhost:5000
+        sync: false
+      - key: GEMINI_MODEL
+        value: gemini-2.5-flash
+        sync: false
+

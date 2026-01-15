@@ -1,0 +1,1116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Minyan Finder - Find or Request a Minyan</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2em;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            opacity: 0.9;
+            font-size: 1.1em;
+        }
+
+        .content {
+            padding: 30px;
+        }
+
+        .form-section {
+            background: #f8f9fa;
+            padding: 25px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+        }
+
+        .form-section h2 {
+            margin-bottom: 20px;
+            color: #333;
+            font-size: 1.3em;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .form-group label {
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #555;
+            font-size: 14px;
+        }
+
+        .form-group select,
+        .form-group input {
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+            background: white;
+        }
+
+        .form-group select:focus,
+        .form-group input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .city-autocomplete-wrapper {
+            position: relative;
+        }
+
+        .city-autocomplete-list {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: white;
+            border: 2px solid #667eea;
+            border-top: none;
+            border-radius: 0 0 8px 8px;
+            max-height: 300px;
+            overflow-y: auto;
+            z-index: 1000;
+            display: none;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .city-autocomplete-list.show {
+            display: block;
+        }
+
+        .city-autocomplete-item {
+            padding: 12px;
+            cursor: pointer;
+            border-bottom: 1px solid #f0f0f0;
+            transition: background 0.2s;
+        }
+
+        .city-autocomplete-item:hover {
+            background: #f0f0f0;
+        }
+
+        .city-autocomplete-item:last-child {
+            border-bottom: none;
+        }
+
+        .form-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .send-btn {
+            padding: 15px 30px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: background 0.3s;
+            flex: 1;
+        }
+
+        .send-btn:hover:not(:disabled) {
+            background: #5568d3;
+        }
+
+        .send-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        .clear-btn {
+            padding: 15px 30px;
+            background: #6c757d;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background 0.3s;
+        }
+
+        .clear-btn:hover {
+            background: #5a6268;
+        }
+
+        .flow-container {
+            margin-top: 30px;
+        }
+
+        .flow-step {
+            background: #f8f9fa;
+            border-left: 4px solid #667eea;
+            padding: 20px;
+            margin-bottom: 15px;
+            border-radius: 6px;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .flow-step h3 {
+            color: #667eea;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .flow-step.user {
+            border-left-color: #28a745;
+        }
+
+        .flow-step.user h3 {
+            color: #28a745;
+        }
+
+        .flow-step.function-call {
+            border-left-color: #ffc107;
+        }
+
+        .flow-step.function-call h3 {
+            color: #ffc107;
+        }
+
+        .flow-step.api-request {
+            border-left-color: #17a2b8;
+        }
+
+        .flow-step.api-request h3 {
+            color: #17a2b8;
+        }
+
+        .flow-step.api-response {
+            border-left-color: #6f42c1;
+        }
+
+        .flow-step.api-response h3 {
+            color: #6f42c1;
+        }
+
+        .flow-step.gemini-response {
+            border-left-color: #dc3545;
+        }
+
+        .flow-step.gemini-response h3 {
+            color: #dc3545;
+        }
+
+        .code-block {
+            background: #2d2d2d;
+            color: #f8f8f2;
+            padding: 15px;
+            border-radius: 6px;
+            overflow-x: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            margin-top: 10px;
+        }
+
+        .icon {
+            font-size: 1.2em;
+        }
+
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(102, 126, 234, 0.3);
+            border-radius: 50%;
+            border-top-color: #667eea;
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 15px;
+            border-radius: 6px;
+            border-left: 4px solid #dc3545;
+            margin-top: 20px;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #6c757d;
+        }
+
+        .empty-state h3 {
+            margin-bottom: 10px;
+            color: #495057;
+        }
+
+        .required-indicator {
+            color: #dc3545;
+            margin-left: 3px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔮 Minyan Finder</h1>
+            <p>Find or request a minyan near you - Complete Request/Response Flow Visualization</p>
+        </div>
+
+        <div class="content">
+            <div class="form-section">
+                <h2>📋 What would you like to do?</h2>
+                <form id="requestForm">
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="requestType">I want to... <span class="required-indicator">*</span></label>
+                            <select id="requestType" required>
+                                <option value="">Choose an option...</option>
+                                <option value="createBroadcast">Request a Minyan (I need people to join me)</option>
+                                <option value="findNearby">Find Nearby Minyans (Search for existing minyans)</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="minyanType">Minyan Type <span class="required-indicator">*</span></label>
+                            <select id="minyanType" required>
+                                <option value="">Select minyan type...</option>
+                                <option value="shacharit">Shacharit</option>
+                                <option value="mincha">Mincha</option>
+                                <option value="maariv">Maariv</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="startTime">Earliest Time <span class="required-indicator">*</span></label>
+                            <select id="startTime" required>
+                                <option value="">Select earliest time...</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="endTime">Latest Time <span class="required-indicator">*</span></label>
+                            <select id="endTime" required>
+                                <option value="">Select latest time...</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group" id="radiusGroup" style="display: none; flex-direction: column;">
+                            <label for="radius">Search Radius (Miles) <span class="required-indicator">*</span></label>
+                            <select id="radius">
+                                <option value="">Select radius...</option>
+                                <option value="1">1 mile</option>
+                                <option value="2">2 miles</option>
+                                <option value="3">3 miles</option>
+                                <option value="5">5 miles</option>
+                                <option value="10">10 miles</option>
+                                <option value="15">15 miles</option>
+                                <option value="20">20 miles</option>
+                                <option value="25">25 miles</option>
+                                <option value="50">50 miles</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group" style="grid-column: 1 / -1;">
+                            <label for="cityInput">Location (City) <span class="required-indicator">*</span></label>
+                            <div class="city-autocomplete-wrapper">
+                                <input 
+                                    type="text" 
+                                    id="cityInput" 
+                                    placeholder="Type to search for a city..."
+                                    autocomplete="off"
+                                    required
+                                >
+                                <div class="city-autocomplete-list" id="cityAutocompleteList"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="submit" class="send-btn" id="sendBtn">Find or Request Minyan</button>
+                        <button type="button" class="clear-btn" onclick="clearForm()">Clear Form</button>
+                        <button type="button" class="clear-btn" onclick="clearFlow()">Clear Results</button>
+                    </div>
+                </form>
+            </div>
+
+            <div class="flow-container" id="flowContainer">
+                <div class="empty-state">
+                    <h3>👋 Welcome to Minyan Finder!</h3>
+                    <p>Fill out the form above to either request a minyan or find nearby minyans.</p>
+                    <p style="margin-top: 10px; font-size: 0.9em;">
+                        This demo shows: Your Request → AI Processing → API Call → Results → AI Response
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = window.location.origin;
+
+        // City to coordinates mapping (matching backend)
+        const CITY_COORDINATES = {
+            'New York, NY': [40.7128, -74.0060],
+            'Manhattan, NY': [40.7831, -73.9712],
+            'Brooklyn, NY': [40.6782, -73.9442],
+            'Queens, NY': [40.7282, -73.7949],
+            'Bronx, NY': [40.8448, -73.8648],
+            'Staten Island, NY': [40.5795, -74.1502],
+            'Upper West Side, NY': [40.7870, -73.9754],
+            'Upper East Side, NY': [40.7736, -73.9566],
+            'Midtown, NY': [40.7549, -73.9840],
+            'Lower Manhattan, NY': [40.7074, -74.0113],
+            'Harlem, NY': [40.8176, -73.9482],
+            'East Village, NY': [40.7265, -73.9815],
+            'West Village, NY': [40.7358, -74.0036],
+            'SoHo, NY': [40.7231, -74.0026],
+            'Tribeca, NY': [40.7163, -74.0086],
+            'Chinatown, NY': [40.7158, -73.9970],
+            'Little Italy, NY': [40.7191, -73.9973],
+            'Greenwich Village, NY': [40.7336, -74.0027],
+            'Chelsea, NY': [40.7465, -74.0014],
+            'Park Slope, Brooklyn, NY': [40.6712, -73.9858],
+            'Williamsburg, Brooklyn, NY': [40.7081, -73.9571],
+            'Astoria, Queens, NY': [40.7700, -73.9308],
+            'Flushing, Queens, NY': [40.7654, -73.8300],
+            'Jamaica, Queens, NY': [40.7021, -73.8019],
+            'Long Island City, Queens, NY': [40.7447, -73.9485],
+            'Cedarhurst, NY': [40.6218, -73.7246],
+            'Lawrence, NY': [40.6157, -73.7296],
+            'Woodmere, NY': [40.6320, -73.7146],
+            'Inwood, NY': [40.6220, -73.7468],
+            'Far Rockaway, NY': [40.6054, -73.7557],
+            'Five Towns, NY': [40.6218, -73.7246],
+            'Great Neck, NY': [40.7873, -73.7262],
+            'Roslyn, NY': [40.8007, -73.6504],
+            'Port Washington, NY': [40.8257, -73.6982],
+            'Garden City, NY': [40.7268, -73.6343],
+            'Rockville Centre, NY': [40.6587, -73.6412],
+            'Lynbrook, NY': [40.6548, -73.6718],
+            'Valley Stream, NY': [40.6643, -73.7085],
+            'Oceanside, NY': [40.6384, -73.6401],
+            'Baldwin, NY': [40.6565, -73.6093],
+            'Merrick, NY': [40.6629, -73.5515],
+            'Bellmore, NY': [40.6687, -73.5271],
+            'Wantagh, NY': [40.6743, -73.5101],
+            'Seaford, NY': [40.6659, -73.5022],
+            'Massapequa, NY': [40.6807, -73.4743],
+            'Amityville, NY': [40.6789, -73.4171],
+            'Lindenhurst, NY': [40.6868, -73.3735],
+            'West Babylon, NY': [40.7432, -73.3537],
+            'Deer Park, NY': [40.7618, -73.3293],
+            'Commack, NY': [40.8429, -73.2929],
+            'Huntington Station, NY': [40.8534, -73.4115],
+            'Dix Hills, NY': [40.8048, -73.3362],
+            'Plainview, NY': [40.7765, -73.4673],
+            'Syosset, NY': [40.8262, -73.5021],
+            'Hicksville, NY': [40.7684, -73.5251],
+            'Levittown, NY': [40.7259, -73.5143],
+            'Bethpage, NY': [40.7443, -73.4821],
+            'Farmingdale, NY': [40.7326, -73.4454],
+            'East Meadow, NY': [40.7140, -73.5590],
+            'Uniondale, NY': [40.7004, -73.5929],
+            'Hempstead, NY': [40.7062, -73.6187],
+            'Freeport, NY': [40.6576, -73.5832],
+            'Long Beach, NY': [40.5884, -73.6580],
+            'Los Angeles, CA': [34.0522, -118.2437],
+            'Chicago, IL': [41.8781, -87.6298],
+            'Houston, TX': [29.7604, -95.3698],
+            'Phoenix, AZ': [33.4484, -112.0740],
+            'Philadelphia, PA': [39.9526, -75.1652],
+            'San Antonio, TX': [29.4241, -98.4936],
+            'San Diego, CA': [32.7157, -117.1611],
+            'Dallas, TX': [32.7767, -96.7970],
+            'San Jose, CA': [37.3382, -121.8863],
+            'Austin, TX': [30.2672, -97.7431],
+            'Jacksonville, FL': [30.3322, -81.6557],
+            'Fort Worth, TX': [32.7555, -97.3308],
+            'Columbus, OH': [39.9612, -82.9988],
+            'Charlotte, NC': [35.2271, -80.8431],
+            'San Francisco, CA': [37.7749, -122.4194],
+            'Indianapolis, IN': [39.7684, -86.1581],
+            'Seattle, WA': [47.6062, -122.3321],
+            'Denver, CO': [39.7392, -104.9903],
+            'Washington, DC': [38.9072, -77.0369],
+            'Boston, MA': [42.3601, -71.0589],
+            'El Paso, TX': [31.7619, -106.4850],
+            'Detroit, MI': [42.3314, -83.0458],
+            'Nashville, TN': [36.1627, -86.7816],
+            'Portland, OR': [45.5152, -122.6784],
+            'Oklahoma City, OK': [35.4676, -97.5164],
+            'Las Vegas, NV': [36.1699, -115.1398],
+            'Memphis, TN': [35.1495, -90.0490],
+            'Louisville, KY': [38.2527, -85.7585],
+            'Baltimore, MD': [39.2904, -76.6122],
+            'Milwaukee, WI': [43.0389, -87.9065],
+            'Albuquerque, NM': [35.0844, -106.6504],
+            'Tucson, AZ': [32.2226, -110.9747],
+            'Fresno, CA': [36.7378, -119.7871],
+            'Sacramento, CA': [38.5816, -121.4944],
+            'Kansas City, MO': [39.0997, -94.5786],
+            'Mesa, AZ': [33.4152, -111.8315],
+            'Atlanta, GA': [33.7490, -84.3880],
+            'Omaha, NE': [41.2565, -95.9345],
+            'Colorado Springs, CO': [38.8339, -104.8214],
+            'Raleigh, NC': [35.7796, -78.6382],
+            'Virginia Beach, VA': [36.8529, -75.9780],
+            'Miami, FL': [25.7617, -80.1918],
+            'Oakland, CA': [37.8044, -122.2712],
+            'Minneapolis, MN': [44.9778, -93.2650],
+            'Tulsa, OK': [36.1540, -95.9928],
+            'Cleveland, OH': [41.4993, -81.6944],
+            'Wichita, KS': [37.6872, -97.3301],
+            'Arlington, TX': [32.7357, -97.1081],
+            'New Orleans, LA': [29.9511, -90.0715],
+            'Tampa, FL': [27.9506, -82.4572],
+            'Honolulu, HI': [21.3099, -157.8581],
+            'Buffalo, NY': [42.8864, -78.8784],
+            'Rochester, NY': [43.1566, -77.6088],
+            'Yonkers, NY': [40.9312, -73.8988],
+            'Syracuse, NY': [43.0481, -76.1474],
+            'Albany, NY': [42.6526, -73.7562]
+        };
+
+        // US Cities list (comprehensive list of major cities from all states)
+        const US_CITIES = [
+            // Alabama
+            'Birmingham, AL', 'Montgomery, AL', 'Mobile, AL', 'Huntsville, AL', 'Tuscaloosa, AL',
+            // Alaska
+            'Anchorage, AK', 'Fairbanks, AK', 'Juneau, AK',
+            // Arizona
+            'Phoenix, AZ', 'Tucson, AZ', 'Mesa, AZ', 'Chandler, AZ', 'Scottsdale, AZ', 'Glendale, AZ',
+            // Arkansas
+            'Little Rock, AR', 'Fayetteville, AR', 'Fort Smith, AR',
+            // California
+            'Los Angeles, CA', 'San Diego, CA', 'San Jose, CA', 'San Francisco, CA', 'Fresno, CA',
+            'Sacramento, CA', 'Long Beach, CA', 'Oakland, CA', 'Bakersfield, CA', 'Anaheim, CA',
+            'Santa Ana, CA', 'Riverside, CA', 'Stockton, CA', 'Irvine, CA', 'Chula Vista, CA',
+            'Fremont, CA', 'San Bernardino, CA', 'Modesto, CA', 'Fontana, CA', 'Oxnard, CA',
+            'Moreno Valley, CA', 'Huntington Beach, CA', 'Glendale, CA', 'Santa Clarita, CA',
+            'Garden Grove, CA', 'Oceanside, CA', 'Rancho Cucamonga, CA', 'Santa Rosa, CA',
+            'Ontario, CA', 'Lancaster, CA', 'Elk Grove, CA', 'Palmdale, CA', 'Corona, CA',
+            'Pomona, CA', 'Salinas, CA', 'Hayward, CA', 'Escondido, CA', 'Torrance, CA',
+            'Sunnyvale, CA', 'Orange, CA', 'Fullerton, CA', 'Pasadena, CA', 'Thousand Oaks, CA',
+            'Visalia, CA', 'Simi Valley, CA', 'Concord, CA', 'Roseville, CA', 'Vallejo, CA',
+            'Victorville, CA', 'Santa Clara, CA', 'Berkeley, CA', 'El Monte, CA', 'Downey, CA',
+            'Costa Mesa, CA', 'Inglewood, CA', 'Ventura, CA', 'West Covina, CA', 'Norwalk, CA',
+            'Carlsbad, CA', 'Fairfield, CA', 'Richmond, CA', 'Murrieta, CA', 'Burbank, CA',
+            'Antioch, CA', 'Daly City, CA', 'Temecula, CA', 'Santa Maria, CA', 'El Cajon, CA',
+            'San Mateo, CA', 'Clovis, CA', 'Compton, CA', 'Jurupa Valley, CA', 'Vista, CA',
+            'South Gate, CA', 'Mission Viejo, CA', 'Vacaville, CA', 'Carson, CA', 'Hesperia, CA',
+            'Santa Monica, CA', 'Westminster, CA', 'Redding, CA', 'Santa Barbara, CA', 'Chico, CA',
+            'Newport Beach, CA', 'San Leandro, CA', 'Hawthorne, CA', 'Citrus Heights, CA',
+            'Alhambra, CA', 'Lakewood, CA', 'Merced, CA', 'Hemet, CA', 'Chino, CA',
+            'Menifee, CA', 'Lake Forest, CA', 'Napa, CA', 'Redwood City, CA', 'Bellflower, CA',
+            'Upland, CA', 'Tulare, CA', 'Yuba City, CA', 'Madera, CA', 'Santa Cruz, CA',
+            'San Rafael, CA', 'Woodland, CA', 'Hemet, CA', 'Hanford, CA', 'Palo Alto, CA',
+            'Porterville, CA', 'Davis, CA', 'Camarillo, CA', 'Yucaipa, CA', 'Watsonville, CA',
+            'South San Francisco, CA', 'Pittsburg, CA', 'Tracy, CA', 'Livermore, CA', 'Manteca, CA',
+            // Colorado
+            'Denver, CO', 'Colorado Springs, CO', 'Aurora, CO', 'Fort Collins, CO', 'Lakewood, CO',
+            'Thornton, CO', 'Arvada, CO', 'Westminster, CO', 'Pueblo, CO', 'Greeley, CO',
+            'Centennial, CO', 'Boulder, CO', 'Longmont, CO', 'Loveland, CO', 'Grand Junction, CO',
+            // Connecticut
+            'Bridgeport, CT', 'New Haven, CT', 'Hartford, CT', 'Stamford, CT', 'Waterbury, CT',
+            'Norwalk, CT', 'Danbury, CT', 'New Britain, CT', 'West Hartford, CT', 'Greenwich, CT',
+            // Delaware
+            'Wilmington, DE', 'Dover, DE', 'Newark, DE', 'Middletown, DE',
+            // Florida
+            'Jacksonville, FL', 'Miami, FL', 'Tampa, FL', 'Orlando, FL', 'St. Petersburg, FL',
+            'Hialeah, FL', 'Tallahassee, FL', 'Fort Lauderdale, FL', 'Port St. Lucie, FL', 'Cape Coral, FL',
+            'Pembroke Pines, FL', 'Hollywood, FL', 'Miramar, FL', 'Gainesville, FL', 'Coral Springs, FL',
+            'Miami Gardens, FL', 'Clearwater, FL', 'Palm Bay, FL', 'West Palm Beach, FL', 'Pompano Beach, FL',
+            'Lakeland, FL', 'Davie, FL', 'Miami Beach, FL', 'Sunrise, FL', 'Plantation, FL',
+            'Boca Raton, FL', 'Deltona, FL', 'Largo, FL', 'Deerfield Beach, FL', 'Boynton Beach, FL',
+            'Fort Myers, FL', 'Kissimmee, FL', 'Homestead, FL', 'Tamarac, FL', 'Delray Beach, FL',
+            'Daytona Beach, FL', 'North Miami, FL', 'Wellington, FL', 'Jupiter, FL', 'Ocala, FL',
+            'Port Orange, FL', 'Margate, FL', 'Coconut Creek, FL', 'Sanford, FL', 'Sarasota, FL',
+            'Pensacola, FL', 'Bradenton, FL', 'Palm Coast, FL', 'Coral Gables, FL', 'Doral, FL',
+            // Georgia
+            'Atlanta, GA', 'Augusta, GA', 'Columbus, GA', 'Savannah, GA', 'Athens, GA',
+            'Sandy Springs, GA', 'Roswell, GA', 'Macon, GA', 'Johns Creek, GA', 'Albany, GA',
+            'Warner Robins, GA', 'Alpharetta, GA', 'Marietta, GA', 'Valdosta, GA', 'Smyrna, GA',
+            'Dunwoody, GA', 'Rome, GA', 'East Point, GA', 'Peachtree Corners, GA', 'Gainesville, GA',
+            // Hawaii
+            'Honolulu, HI', 'Pearl City, HI', 'Hilo, HI', 'Kailua, HI', 'Kaneohe, HI',
+            // Idaho
+            'Boise, ID', 'Nampa, ID', 'Meridian, ID', 'Idaho Falls, ID', 'Pocatello, ID',
+            // Illinois
+            'Chicago, IL', 'Aurora, IL', 'Naperville, IL', 'Joliet, IL', 'Rockford, IL',
+            'Springfield, IL', 'Elgin, IL', 'Peoria, IL', 'Champaign, IL', 'Waukegan, IL',
+            'Cicero, IL', 'Bloomington, IL', 'Arlington Heights, IL', 'Evanston, IL', 'Decatur, IL',
+            'Schaumburg, IL', 'Bolingbrook, IL', 'Palatine, IL', 'Skokie, IL', 'Des Plaines, IL',
+            'Orland Park, IL', 'Tinley Park, IL', 'Oak Lawn, IL', 'Berwyn, IL', 'Mount Prospect, IL',
+            'Normal, IL', 'Wheaton, IL', 'Hoffman Estates, IL', 'Oak Park, IL', 'Downers Grove, IL',
+            'Elmhurst, IL', 'Glenview, IL', 'Lombard, IL', 'Buffalo Grove, IL', 'Bartlett, IL',
+            'Urbana, IL', 'Crystal Lake, IL', 'Quincy, IL', 'Streamwood, IL', 'Carol Stream, IL',
+            'Romeoville, IL', 'Plainfield, IL', 'Hanover Park, IL', 'Carpentersville, IL', 'Wheeling, IL',
+            // Indiana
+            'Indianapolis, IN', 'Fort Wayne, IN', 'Evansville, IN', 'South Bend, IN', 'Carmel, IN',
+            'Fishers, IN', 'Bloomington, IN', 'Hammond, IN', 'Gary, IN', 'Muncie, IN',
+            'Terre Haute, IN', 'Kokomo, IN', 'Anderson, IN', 'Noblesville, IN', 'Greenwood, IN',
+            'Elkhart, IN', 'Mishawaka, IN', 'Lawrence, IN', 'Jeffersonville, IN', 'Columbus, IN',
+            // Iowa
+            'Des Moines, IA', 'Cedar Rapids, IA', 'Davenport, IA', 'Sioux City, IA', 'Iowa City, IA',
+            'Waterloo, IA', 'Council Bluffs, IA', 'Ames, IA', 'West Des Moines, IA', 'Dubuque, IA',
+            // Kansas
+            'Wichita, KS', 'Overland Park, KS', 'Kansas City, KS', 'Olathe, KS', 'Topeka, KS',
+            'Lawrence, KS', 'Shawnee, KS', 'Manhattan, KS', 'Lenexa, KS', 'Salina, KS',
+            // Kentucky
+            'Louisville, KY', 'Lexington, KY', 'Bowling Green, KY', 'Owensboro, KY', 'Covington, KY',
+            'Hopkinsville, KY', 'Richmond, KY', 'Florence, KY', 'Georgetown, KY', 'Henderson, KY',
+            // Louisiana
+            'New Orleans, LA', 'Baton Rouge, LA', 'Shreveport, LA', 'Lafayette, LA', 'Lake Charles, LA',
+            'Kenner, LA', 'Bossier City, LA', 'Monroe, LA', 'Alexandria, LA', 'Houma, LA',
+            // Maine
+            'Portland, ME', 'Lewiston, ME', 'Bangor, ME', 'South Portland, ME', 'Auburn, ME',
+            // Maryland
+            'Baltimore, MD', 'Frederick, MD', 'Rockville, MD', 'Gaithersburg, MD', 'Bowie, MD',
+            'Annapolis, MD', 'College Park, MD', 'Salisbury, MD', 'Laurel, MD', 'Greenbelt, MD',
+            // Massachusetts
+            'Boston, MA', 'Worcester, MA', 'Springfield, MA', 'Lowell, MA', 'Cambridge, MA',
+            'New Bedford, MA', 'Brockton, MA', 'Quincy, MA', 'Lynn, MA', 'Fall River, MA',
+            'Newton, MA', 'Lawrence, MA', 'Somerville, MA', 'Framingham, MA', 'Haverhill, MA',
+            'Waltham, MA', 'Malden, MA', 'Brookline, MA', 'Plymouth, MA', 'Medford, MA',
+            'Taunton, MA', 'Chicopee, MA', 'Weymouth, MA', 'Revere, MA', 'Peabody, MA',
+            // Michigan
+            'Detroit, MI', 'Grand Rapids, MI', 'Warren, MI', 'Sterling Heights, MI', 'Lansing, MI',
+            'Ann Arbor, MI', 'Flint, MI', 'Dearborn, MI', 'Livonia, MI', 'Troy, MI',
+            'Westland, MI', 'Farmington Hills, MI', 'Kalamazoo, MI', 'Wyoming, MI', 'Southfield, MI',
+            'Rochester Hills, MI', 'Taylor, MI', 'Pontiac, MI', 'St. Clair Shores, MI', 'Royal Oak, MI',
+            'Novi, MI', 'Dearborn Heights, MI', 'Battle Creek, MI', 'Saginaw, MI', 'Kentwood, MI',
+            // Minnesota
+            'Minneapolis, MN', 'St. Paul, MN', 'Rochester, MN', 'Duluth, MN', 'Bloomington, MN',
+            'Brooklyn Park, MN', 'Plymouth, MN', 'St. Cloud, MN', 'Eagan, MN', 'Woodbury, MN',
+            // Mississippi
+            'Jackson, MS', 'Gulfport, MS', 'Southaven, MS', 'Hattiesburg, MS', 'Biloxi, MS',
+            // Missouri
+            'Kansas City, MO', 'St. Louis, MO', 'Springfield, MO', 'Columbia, MO', 'Independence, MO',
+            'Lee\'s Summit, MO', 'O\'Fallon, MO', 'St. Joseph, MO', 'St. Charles, MO', 'St. Peters, MO',
+            'Blue Springs, MO', 'Florissant, MO', 'Joplin, MO', 'Chesterfield, MO', 'Jefferson City, MO',
+            // Montana
+            'Billings, MT', 'Missoula, MT', 'Great Falls, MT', 'Bozeman, MT', 'Butte, MT',
+            // Nebraska
+            'Omaha, NE', 'Lincoln, NE', 'Bellevue, NE', 'Grand Island, NE', 'Kearney, NE',
+            // Nevada
+            'Las Vegas, NV', 'Henderson, NV', 'Reno, NV', 'North Las Vegas, NV', 'Sparks, NV',
+            'Carson City, NV', 'Fernley, NV', 'Elko, NV', 'Mesquite, NV', 'Boulder City, NV',
+            // New Hampshire
+            'Manchester, NH', 'Nashua, NH', 'Concord, NH', 'Derry, NH', 'Rochester, NH',
+            // New Jersey
+            'Newark, NJ', 'Jersey City, NJ', 'Paterson, NJ', 'Elizabeth, NJ', 'Edison, NJ',
+            'Woodbridge, NJ', 'Lakewood, NJ', 'Toms River, NJ', 'Hamilton, NJ', 'Trenton, NJ',
+            'Clifton, NJ', 'Camden, NJ', 'Brick, NJ', 'Cherry Hill, NJ', 'Passaic, NJ',
+            'Union City, NJ', 'Bayonne, NJ', 'East Orange, NJ', 'Vineland, NJ', 'New Brunswick, NJ',
+            'Hoboken, NJ', 'Perth Amboy, NJ', 'West New York, NJ', 'Plainfield, NJ', 'Hackensack, NJ',
+            'Sayreville, NJ', 'Kearny, NJ', 'Linden, NJ', 'Fort Lee, NJ', 'Teaneck, NJ',
+            'Fair Lawn, NJ', 'Bergenfield, NJ', 'Paramus, NJ', 'Ridgewood, NJ', 'Englewood, NJ',
+            'Westfield, NJ', 'Montclair, NJ', 'Livingston, NJ', 'Bloomfield, NJ', 'West Orange, NJ',
+            'Maplewood, NJ', 'Millburn, NJ', 'Summit, NJ', 'Morristown, NJ', 'Madison, NJ',
+            // New Mexico
+            'Albuquerque, NM', 'Las Cruces, NM', 'Rio Rancho, NM', 'Santa Fe, NM', 'Roswell, NM',
+            // New York
+            'New York, NY', 'Buffalo, NY', 'Rochester, NY', 'Yonkers, NY', 'Syracuse, NY',
+            'Albany, NY', 'New Rochelle, NY', 'Mount Vernon, NY', 'Schenectady, NY', 'Utica, NY',
+            'White Plains, NY', 'Hempstead, NY', 'Troy, NY', 'Niagara Falls, NY', 'Binghamton, NY',
+            'Freeport, NY', 'Valley Stream, NY', 'Long Beach, NY', 'Rome, NY', 'Ithaca, NY',
+            'Poughkeepsie, NY', 'Jamestown, NY', 'Elmira, NY', 'Watertown, NY', 'Auburn, NY',
+            'Glen Cove, NY', 'Plattsburgh, NY', 'Batavia, NY', 'Oswego, NY', 'Kingston, NY',
+            'Middletown, NY', 'Oneonta, NY', 'Cortland, NY', 'Glens Falls, NY', 'Lockport, NY',
+            // New York - NYC Boroughs and neighborhoods
+            'Manhattan, NY', 'Brooklyn, NY', 'Queens, NY', 'Bronx, NY', 'Staten Island, NY',
+            'Upper West Side, NY', 'Upper East Side, NY', 'Midtown, NY', 'Lower Manhattan, NY',
+            'Harlem, NY', 'East Village, NY', 'West Village, NY', 'SoHo, NY', 'Tribeca, NY',
+            'Chinatown, NY', 'Little Italy, NY', 'Greenwich Village, NY', 'Chelsea, NY',
+            'Park Slope, Brooklyn, NY', 'Williamsburg, Brooklyn, NY', 'Astoria, Queens, NY',
+            'Flushing, Queens, NY', 'Jamaica, Queens, NY', 'Long Island City, Queens, NY',
+            // New York - Long Island
+            'Hempstead, NY', 'Brookhaven, NY', 'Islip, NY', 'Oyster Bay, NY', 'Babylon, NY',
+            'Huntington, NY', 'Smithtown, NY', 'Ramapo, NY', 'Southampton, NY', 'East Hampton, NY',
+            'Cedarhurst, NY', 'Lawrence, NY', 'Woodmere, NY', 'Inwood, NY', 'Far Rockaway, NY',
+            'Five Towns, NY', 'Great Neck, NY', 'Roslyn, NY', 'Port Washington, NY', 'Garden City, NY',
+            'Rockville Centre, NY', 'Lynbrook, NY', 'Valley Stream, NY', 'Oceanside, NY', 'Baldwin, NY',
+            'Merrick, NY', 'Bellmore, NY', 'Wantagh, NY', 'Seaford, NY', 'Massapequa, NY',
+            'Amityville, NY', 'Lindenhurst, NY', 'West Babylon, NY', 'Deer Park, NY', 'Commack, NY',
+            'Huntington Station, NY', 'Dix Hills, NY', 'Plainview, NY', 'Syosset, NY', 'Hicksville, NY',
+            'Levittown, NY', 'Bethpage, NY', 'Farmingdale, NY', 'East Meadow, NY', 'Uniondale, NY',
+            // North Carolina
+            'Charlotte, NC', 'Raleigh, NC', 'Greensboro, NC', 'Durham, NC', 'Winston-Salem, NC',
+            'Fayetteville, NC', 'Cary, NC', 'Wilmington, NC', 'High Point, NC', 'Concord, NC',
+            'Asheville, NC', 'Gastonia, NC', 'Jacksonville, NC', 'Chapel Hill, NC', 'Rocky Mount, NC',
+            // North Dakota
+            'Fargo, ND', 'Bismarck, ND', 'Grand Forks, ND', 'Minot, ND', 'West Fargo, ND',
+            // Ohio
+            'Columbus, OH', 'Cleveland, OH', 'Cincinnati, OH', 'Toledo, OH', 'Akron, OH',
+            'Dayton, OH', 'Parma, OH', 'Canton, OH', 'Youngstown, OH', 'Lorain, OH',
+            'Hamilton, OH', 'Springfield, OH', 'Kettering, OH', 'Elyria, OH', 'Lakewood, OH',
+            'Cuyahoga Falls, OH', 'Middletown, OH', 'Euclid, OH', 'Newark, OH', 'Mansfield, OH',
+            'Mentor, OH', 'Beavercreek, OH', 'Cleveland Heights, OH', 'Strongsville, OH', 'Fairborn, OH',
+            'Findlay, OH', 'Warren, OH', 'Lancaster, OH', 'Lima, OH', 'Huber Heights, OH',
+            'Westerville, OH', 'Marion, OH', 'Grove City, OH', 'Stow, OH', 'Delaware, OH',
+            // Oklahoma
+            'Oklahoma City, OK', 'Tulsa, OK', 'Norman, OK', 'Broken Arrow, OK', 'Lawton, OK',
+            'Edmond, OK', 'Moore, OK', 'Midwest City, OK', 'Enid, OK', 'Stillwater, OK',
+            // Oregon
+            'Portland, OR', 'Eugene, OR', 'Salem, OR', 'Gresham, OR', 'Hillsboro, OR',
+            'Bend, OR', 'Beaverton, OR', 'Medford, OR', 'Springfield, OR', 'Corvallis, OR',
+            // Pennsylvania
+            'Philadelphia, PA', 'Pittsburgh, PA', 'Allentown, PA', 'Erie, PA', 'Reading, PA',
+            'Scranton, PA', 'Bethlehem, PA', 'Lancaster, PA', 'Harrisburg, PA', 'Altoona, PA',
+            'York, PA', 'State College, PA', 'Wilkes-Barre, PA', 'Chester, PA', 'Williamsport, PA',
+            'Easton, PA', 'Lebanon, PA', 'Hazleton, PA', 'Chambersburg, PA', 'Johnstown, PA',
+            // Rhode Island
+            'Providence, RI', 'Warwick, RI', 'Cranston, RI', 'Pawtucket, RI', 'East Providence, RI',
+            // South Carolina
+            'Charleston, SC', 'Columbia, SC', 'North Charleston, SC', 'Mount Pleasant, SC', 'Rock Hill, SC',
+            'Greenville, SC', 'Summerville, SC', 'Sumter, SC', 'Hilton Head Island, SC', 'Spartanburg, SC',
+            // South Dakota
+            'Sioux Falls, SD', 'Rapid City, SD', 'Aberdeen, SD', 'Brookings, SD', 'Watertown, SD',
+            // Tennessee
+            'Nashville, TN', 'Memphis, TN', 'Knoxville, TN', 'Chattanooga, TN', 'Clarksville, TN',
+            'Murfreesboro, TN', 'Franklin, TN', 'Jackson, TN', 'Johnson City, TN', 'Bartlett, TN',
+            'Hendersonville, TN', 'Kingsport, TN', 'Collierville, TN', 'Smyrna, TN', 'Brentwood, TN',
+            // Texas
+            'Houston, TX', 'San Antonio, TX', 'Dallas, TX', 'Austin, TX', 'Fort Worth, TX',
+            'El Paso, TX', 'Arlington, TX', 'Corpus Christi, TX', 'Plano, TX', 'Laredo, TX',
+            'Lubbock, TX', 'Garland, TX', 'Irving, TX', 'Amarillo, TX', 'Grand Prairie, TX',
+            'Brownsville, TX', 'McKinney, TX', 'Frisco, TX', 'Pasadena, TX', 'Killeen, TX',
+            'Mesquite, TX', 'McAllen, TX', 'Carrollton, TX', 'Midland, TX', 'Denton, TX',
+            'Abilene, TX', 'Beaumont, TX', 'Round Rock, TX', 'Odessa, TX', 'Waco, TX',
+            'Richardson, TX', 'Lewisville, TX', 'Tyler, TX', 'College Station, TX', 'Pearland, TX',
+            'Wichita Falls, TX', 'San Angelo, TX', 'Edinburg, TX', 'Sugar Land, TX', 'The Woodlands, TX',
+            'League City, TX', 'Longview, TX', 'Bryan, TX', 'Baytown, TX', 'Pharr, TX',
+            // Utah
+            'Salt Lake City, UT', 'West Valley City, UT', 'Provo, UT', 'West Jordan, UT', 'Orem, UT',
+            'Sandy, UT', 'Ogden, UT', 'St. George, UT', 'Layton, UT', 'Taylorsville, UT',
+            // Vermont
+            'Burlington, VT', 'Essex, VT', 'South Burlington, VT', 'Colchester, VT', 'Rutland, VT',
+            // Virginia
+            'Virginia Beach, VA', 'Norfolk, VA', 'Chesapeake, VA', 'Richmond, VA', 'Newport News, VA',
+            'Alexandria, VA', 'Hampton, VA', 'Portsmouth, VA', 'Suffolk, VA', 'Roanoke, VA',
+            'Lynchburg, VA', 'Harrisonburg, VA', 'Leesburg, VA', 'Charlottesville, VA', 'Danville, VA',
+            'Blacksburg, VA', 'Manassas, VA', 'Petersburg, VA', 'Fredericksburg, VA', 'Winchester, VA',
+            // Washington
+            'Seattle, WA', 'Spokane, WA', 'Tacoma, WA', 'Vancouver, WA', 'Bellevue, WA',
+            'Kent, WA', 'Everett, WA', 'Renton, WA', 'Yakima, WA', 'Federal Way, WA',
+            'Spokane Valley, WA', 'Bellingham, WA', 'Kennewick, WA', 'Auburn, WA', 'Pasco, WA',
+            'Marysville, WA', 'Lakewood, WA', 'Redmond, WA', 'Shoreline, WA', 'Richland, WA',
+            // West Virginia
+            'Charleston, WV', 'Huntington, WV', 'Parkersburg, WV', 'Morgantown, WV', 'Wheeling, WV',
+            // Wisconsin
+            'Milwaukee, WI', 'Madison, WI', 'Green Bay, WI', 'Kenosha, WI', 'Racine, WI',
+            'Appleton, WI', 'Waukesha, WI', 'Oshkosh, WI', 'Eau Claire, WI', 'Janesville, WI',
+            'West Allis, WI', 'La Crosse, WI', 'Sheboygan, WI', 'Wauwatosa, WI', 'Fond du Lac, WI',
+            // Wyoming
+            'Cheyenne, WY', 'Casper, WY', 'Laramie, WY', 'Gillette, WY', 'Rock Springs, WY'
+        ];
+
+        // Populate time dropdowns
+        function populateTimeDropdowns() {
+            const startSelect = document.getElementById('startTime');
+            const endSelect = document.getElementById('endTime');
+            
+            // Generate time options (every 15 minutes from 5:00 AM to 11:45 PM)
+            const times = [];
+            for (let hour = 5; hour < 24; hour++) {
+                for (let minute = 0; minute < 60; minute += 15) {
+                    const time24 = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
+                    const hour12 = hour > 12 ? hour - 12 : (hour === 0 ? 12 : hour);
+                    const ampm = hour >= 12 ? 'PM' : 'AM';
+                    const time12 = `${hour12}:${minute.toString().padStart(2, '0')} ${ampm}`;
+                    times.push({ value: time24, label: time12 });
+                }
+            }
+            
+            times.forEach(time => {
+                const startOption = document.createElement('option');
+                startOption.value = time.value;
+                startOption.textContent = time.label;
+                startSelect.appendChild(startOption);
+                
+                const endOption = document.createElement('option');
+                endOption.value = time.value;
+                endOption.textContent = time.label;
+                endSelect.appendChild(endOption);
+            });
+        }
+
+        // City autocomplete functionality
+        let filteredCities = [];
+        let selectedCityIndex = -1;
+
+        function filterCities(query) {
+            if (!query) {
+                return [];
+            }
+            const lowerQuery = query.toLowerCase();
+            return US_CITIES.filter(city => 
+                city.toLowerCase().includes(lowerQuery)
+            ).slice(0, 10); // Limit to 10 suggestions
+        }
+
+        function showCitySuggestions(cities) {
+            const list = document.getElementById('cityAutocompleteList');
+            list.innerHTML = '';
+            
+            if (cities.length === 0) {
+                list.classList.remove('show');
+                return;
+            }
+            
+            cities.forEach((city, index) => {
+                const item = document.createElement('div');
+                item.className = 'city-autocomplete-item';
+                item.textContent = city;
+                item.addEventListener('click', () => {
+                    document.getElementById('cityInput').value = city;
+                    list.classList.remove('show');
+                    selectedCityIndex = -1;
+                });
+                list.appendChild(item);
+            });
+            
+            list.classList.add('show');
+            selectedCityIndex = -1;
+        }
+
+        // Event listeners
+        document.getElementById('cityInput').addEventListener('input', (e) => {
+            const query = e.target.value;
+            filteredCities = filterCities(query);
+            showCitySuggestions(filteredCities);
+        });
+
+        document.getElementById('cityInput').addEventListener('keydown', (e) => {
+            const list = document.getElementById('cityAutocompleteList');
+            const items = list.querySelectorAll('.city-autocomplete-item');
+            
+            if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                selectedCityIndex = Math.min(selectedCityIndex + 1, items.length - 1);
+                items.forEach((item, idx) => {
+                    item.style.background = idx === selectedCityIndex ? '#f0f0f0' : '';
+                });
+            } else if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                selectedCityIndex = Math.max(selectedCityIndex - 1, -1);
+                items.forEach((item, idx) => {
+                    item.style.background = idx === selectedCityIndex ? '#f0f0f0' : '';
+                });
+            } else if (e.key === 'Enter' && selectedCityIndex >= 0) {
+                e.preventDefault();
+                items[selectedCityIndex].click();
+            } else if (e.key === 'Escape') {
+                list.classList.remove('show');
+            }
+        });
+
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('.city-autocomplete-wrapper')) {
+                document.getElementById('cityAutocompleteList').classList.remove('show');
+            }
+        });
+
+        // Show/hide radius field based on request type
+        document.getElementById('requestType').addEventListener('change', (e) => {
+            const radiusGroup = document.getElementById('radiusGroup');
+            const radiusSelect = document.getElementById('radius');
+            
+            if (e.target.value === 'findNearby') {
+                radiusGroup.style.display = 'flex';
+                radiusSelect.required = true;
+            } else {
+                radiusGroup.style.display = 'none';
+                radiusSelect.required = false;
+                radiusSelect.value = '';
+            }
+            
+            // Also hide/show time fields based on request type
+            const timeFields = document.querySelectorAll('#startTime, #endTime');
+            const timeLabels = document.querySelectorAll('label[for="startTime"], label[for="endTime"]');
+            
+            if (e.target.value === 'createBroadcast') {
+                timeFields.forEach(field => {
+                    field.closest('.form-group').style.display = 'flex';
+                    field.required = true;
+                });
+            } else {
+                timeFields.forEach(field => {
+                    field.closest('.form-group').style.display = 'none';
+                    field.required = false;
+                    field.value = '';
+                });
+            }
+        });
+
+        // Form submission
+        document.getElementById('requestForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            await submitRequest();
+        });
+
+        function buildMessage() {
+            const requestType = document.getElementById('requestType').value;
+            const minyanType = document.getElementById('minyanType').value;
+            const startTime = document.getElementById('startTime').value;
+            const endTime = document.getElementById('endTime').value;
+            const city = document.getElementById('cityInput').value;
+            const radius = document.getElementById('radius').value;
+
+            // Validate required fields
+            if (!requestType || !minyanType || !city) {
+                alert('Please fill in all required fields');
+                return null;
+            }
+
+            // Get coordinates for the city
+            let coords = CITY_COORDINATES[city];
+            if (!coords) {
+                // Try case-insensitive match
+                const cityLower = city.toLowerCase();
+                for (const [key, value] of Object.entries(CITY_COORDINATES)) {
+                    if (key.toLowerCase() === cityLower) {
+                        coords = value;
+                        break;
+                    }
+                }
+            }
+
+            // Build message with coordinates if available
+            const coordsText = coords ? ` at latitude ${coords[0]} and longitude ${coords[1]}` : '';
+
+            if (requestType === 'createBroadcast') {
+                if (!startTime || !endTime) {
+                    alert('Please fill in all required fields');
+                    return null;
+                }
+                // Convert 24-hour time to readable format
+                const startTime12 = convertTo12Hour(startTime);
+                const endTime12 = convertTo12Hour(endTime);
+                if (coords) {
+                    return `I need a ${minyanType} minyan in ${city}${coordsText}. The start time is ${startTime12} and end time is ${endTime12}`;
+                } else {
+                    return `I need a ${minyanType} minyan in ${city}. The start time is ${startTime12} and end time is ${endTime12}`;
+                }
+            } else if (requestType === 'findNearby') {
+                if (!radius) {
+                    alert('Please select a search radius');
+                    return null;
+                }
+                if (coords) {
+                    return `Find nearby ${minyanType} minyans within ${radius} ${radius === '1' ? 'mile' : 'miles'} of ${city}${coordsText}`;
+                } else {
+                    return `Find nearby ${minyanType} minyans within ${radius} ${radius === '1' ? 'mile' : 'miles'} in ${city}`;
+                }
+            }
+        }
+
+        function convertTo12Hour(time24) {
+            const [hours, minutes] = time24.split(':');
+            const hour = parseInt(hours);
+            const hour12 = hour > 12 ? hour - 12 : (hour === 0 ? 12 : hour);
+            const ampm = hour >= 12 ? 'PM' : 'AM';
+            return `${hour12}:${minutes} ${ampm}`;
+        }
+
+        async function submitRequest() {
+            const message = buildMessage();
+            if (!message) return;
+
+            const sendBtn = document.getElementById('sendBtn');
+            const flowContainer = document.getElementById('flowContainer');
+
+            // Disable form and button
+            document.getElementById('requestForm').querySelectorAll('input, select, button').forEach(el => {
+                el.disabled = true;
+            });
+            sendBtn.innerHTML = '<span class="loading"></span> Searching...';
+
+            // Clear empty state if present
+            if (flowContainer.querySelector('.empty-state')) {
+                flowContainer.innerHTML = '';
+            }
+
+            // Show user message
+            addFlowStep('user', '👤 User Request', message);
+
+            try {
+                const response = await fetch(`${API_BASE}/chat`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ message: message, verbose: false })
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.error || 'Failed to get response');
+                }
+
+                // Show function calls
+                if (data.function_calls && data.function_calls.length > 0) {
+                    data.function_calls.forEach((fc, index) => {
+                        addFlowStep('function-call', 
+                            `🔧 Gemini Function Call ${data.function_calls.length > 1 ? `#${index + 1}` : ''}`, 
+                            `Function: <strong>${fc.name}</strong><br>Arguments: <pre class="code-block">${JSON.stringify(fc.arguments, null, 2)}</pre>`
+                        );
+
+                        // Show corresponding API request/response
+                        const apiResponse = data.api_responses[index];
+                        if (apiResponse) {
+                            // Handle geocoding function differently
+                            if (fc.name === 'geocodeLocation') {
+                                addFlowStep('api-request', 
+                                    `🌍 Geocoding Service Request`, 
+                                    `GET Nominatim Geocoding API<br>Location: <strong>${fc.arguments.location}</strong>`
+                                );
+
+                                addFlowStep('api-response', 
+                                    `📥 Geocoding Response`, 
+                                    `Status: <strong>${apiResponse.success ? 'Success ✓' : 'Error ✗'}</strong><br><pre class="code-block">${JSON.stringify(apiResponse.data || {error: apiResponse.error}, null, 2)}</pre>`
+                                );
+                            } else {
+                                const apiMethod = fc.name === 'createBroadcast' ? 'POST' : 'GET';
+                                const apiEndpoint = fc.name === 'createBroadcast' ? '/broadcasts' : '/broadcasts/nearby';
+                                
+                                addFlowStep('api-request', 
+                                    `📡 API Request`, 
+                                    `${apiMethod} ${apiEndpoint}<br><pre class="code-block">${JSON.stringify(fc.arguments, null, 2)}</pre>`
+                                );
+
+                                addFlowStep('api-response', 
+                                    `📥 API Response`, 
+                                    `Status: <strong>${apiResponse.success ? 'Success ✓' : 'Error ✗'}</strong><br><pre class="code-block">${JSON.stringify(apiResponse.data || {error: apiResponse.error}, null, 2)}</pre>`
+                                );
+                            }
+                        }
+                    });
+                } else {
+                    addFlowStep('function-call', 
+                        '🔧 Gemini Analysis', 
+                        'No function call needed - Gemini responded directly'
+                    );
+                }
+
+                // Show final Gemini response
+                addFlowStep('gemini-response', 
+                    '💬 Gemini Final Response', 
+                    data.response || 'No response'
+                );
+
+            } catch (error) {
+                addFlowStep('error', 
+                    '❌ Error', 
+                    error.message
+                );
+            } finally {
+                // Re-enable form and button
+                document.getElementById('requestForm').querySelectorAll('input, select, button').forEach(el => {
+                    el.disabled = false;
+                });
+                sendBtn.textContent = 'Find or Request Minyan';
+            }
+        }
+
+        function clearForm() {
+            document.getElementById('requestForm').reset();
+            document.getElementById('cityAutocompleteList').classList.remove('show');
+        }
+
+        function clearFlow() {
+            const flowContainer = document.getElementById('flowContainer');
+            flowContainer.innerHTML = `
+                <div class="empty-state">
+                    <h3>👋 Results Cleared</h3>
+                    <p>Fill out the form above to request a minyan or find nearby minyans.</p>
+                </div>
+            `;
+        }
+
+        function addFlowStep(type, title, content) {
+            const flowContainer = document.getElementById('flowContainer');
+            const step = document.createElement('div');
+            step.className = `flow-step ${type}`;
+            step.innerHTML = `
+                <h3><span class="icon">${getIcon(type)}</span> ${title}</h3>
+                <div>${content}</div>
+            `;
+            flowContainer.appendChild(step);
+            step.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+
+        function getIcon(type) {
+            const icons = {
+                'user': '👤',
+                'function-call': '🔧',
+                'api-request': '📡',
+                'api-response': '📥',
+                'gemini-response': '💬',
+                'error': '❌'
+            };
+            return icons[type] || '📝';
+        }
+
+        // Initialize time dropdowns on page load
+        populateTimeDropdowns();
+    </script>
+</body>
+</html>
